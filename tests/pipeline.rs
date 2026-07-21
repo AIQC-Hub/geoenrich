@@ -1,0 +1,88 @@
+//! End-to-end check of the shared pipeline with a deterministic dummy enricher:
+//! it verifies de-duplication of rounded locations, parallel enrichment, the
+//! join back to every row, and round-tripping through Parquet.
+
+use geoenrich::cli::Format;
+use geoenrich::config::{Settings, BALTIC};
+use geoenrich::pipeline::{run_module, Enricher, OutputKind, OutputSpec, Value};
+use polars::prelude::*;
+
+/// Appends a float (lon + lat) and a text label, so both column kinds are tested.
+struct Dummy;
+
+impl Enricher for Dummy {
+    fn outputs(&self) -> Vec<OutputSpec> {
+        vec![
+            OutputSpec { name: "val".into(), kind: OutputKind::Float },
+            OutputSpec { name: "lbl".into(), kind: OutputKind::Text },
+        ]
+    }
+    fn enrich(&self, lon: f64, lat: f64) -> Vec<Value> {
+        vec![
+            Value::Float(lon + lat),
+            Value::Text(Some(format!("{lon:.1},{lat:.1}"))),
+        ]
+    }
+}
+
+fn settings() -> Settings {
+    Settings {
+        lon_col: "longitude".into(),
+        lat_col: "latitude".into(),
+        decimals: 3,
+        threads: None,
+        bbox: BALTIC,
+        proj_lon0: 19.5,
+        proj_lat0: 59.5,
+    }
+}
+
+#[test]
+fn appends_columns_and_dedups_rows() {
+    // Two identical rows plus one distinct: 3 rows, 2 unique locations.
+    let df = df! {
+        "longitude" => [18.0f64, 18.0, 24.0],
+        "latitude"  => [59.0f64, 59.0, 60.0],
+    }
+    .unwrap();
+
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("out.parquet");
+    run_module(&Dummy, df, &settings(), &out, Format::Parquet).unwrap();
+
+    let back = ParquetReader::new(std::fs::File::open(&out).unwrap())
+        .finish()
+        .unwrap();
+    assert_eq!(back.height(), 3);
+    assert_eq!(back.width(), 4); // longitude, latitude, val, lbl
+
+    let val = back.column("val").unwrap().f64().unwrap();
+    assert_eq!(val.get(0), Some(77.0));
+    assert_eq!(val.get(1), Some(77.0));
+    assert_eq!(val.get(2), Some(84.0));
+
+    let lbl = back.column("lbl").unwrap().str().unwrap();
+    assert_eq!(lbl.get(0), Some("18.0,59.0"));
+    assert_eq!(lbl.get(2), Some("24.0,60.0"));
+}
+
+#[test]
+fn nan_coordinates_get_null_outputs() {
+    let df = df! {
+        "longitude" => [18.0f64, f64::NAN],
+        "latitude"  => [59.0f64, 59.0],
+    }
+    .unwrap();
+
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("out.parquet");
+    run_module(&Dummy, df, &settings(), &out, Format::Parquet).unwrap();
+
+    let back = ParquetReader::new(std::fs::File::open(&out).unwrap())
+        .finish()
+        .unwrap();
+    let val = back.column("val").unwrap().f64().unwrap();
+    assert_eq!(val.get(0), Some(77.0));
+    // The NaN-coordinate row has no key, so its enrichment is null/NaN.
+    assert!(val.get(1).map(|v| v.is_nan()).unwrap_or(true));
+}

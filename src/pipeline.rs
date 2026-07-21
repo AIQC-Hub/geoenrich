@@ -1,0 +1,150 @@
+//! The one pipeline every module runs.
+//!
+//! 1. Read the input table (done by the caller, passed in as a `DataFrame`).
+//! 2. Reduce it to unique rounded `(lon, lat)` locations.
+//! 3. Enrich those unique locations in parallel (rayon).
+//! 4. Join the results back onto every input row and write the table out.
+//!
+//! A module only implements [`Enricher`]: it declares the columns it appends and
+//! computes their values for one location. Everything else lives here, so all
+//! four modules share the same de-duplication, parallelism, and join.
+
+use std::collections::HashMap;
+use std::error::Error;
+use std::path::Path;
+
+use polars::prelude::*;
+use rayon::prelude::*;
+
+use crate::cli::Format;
+use crate::config::Settings;
+use crate::io;
+
+/// One appended column's name and type.
+pub struct OutputSpec {
+    pub name: String,
+    pub kind: OutputKind,
+}
+
+#[derive(Clone, Copy)]
+pub enum OutputKind {
+    Float,
+    Text,
+}
+
+/// A single computed value, matching an [`OutputSpec`] by position.
+pub enum Value {
+    Float(f64),
+    Text(Option<String>),
+}
+
+/// A module's per-location logic. `Sync` so locations run in parallel.
+pub trait Enricher: Sync {
+    /// The columns this enricher appends, in order.
+    fn outputs(&self) -> Vec<OutputSpec>;
+    /// Compute the values for one unique location. The returned vector must line
+    /// up with `outputs()`.
+    fn enrich(&self, lon: f64, lat: f64) -> Vec<Value>;
+}
+
+/// Extract a column as `f64`, mapping nulls to NaN. Casts from any numeric dtype.
+fn column_f64(df: &DataFrame, name: &str) -> Result<Vec<f64>, Box<dyn Error>> {
+    let s = df
+        .column(name)
+        .map_err(|_| format!("input has no column '{name}'"))?;
+    let ca = s.cast(&DataType::Float64)?;
+    let f = ca.f64()?;
+    Ok(f.into_iter().map(|o| o.unwrap_or(f64::NAN)).collect())
+}
+
+/// Run the shared pipeline for one enricher and write the result.
+pub fn run_module(
+    enr: &dyn Enricher,
+    df: DataFrame,
+    s: &Settings,
+    out_path: &Path,
+    out_fmt: Format,
+) -> Result<(), Box<dyn Error>> {
+    if let Some(n) = s.threads {
+        // build_global can only succeed once per process; ignore if already set.
+        let _ = rayon::ThreadPoolBuilder::new().num_threads(n).build_global();
+    }
+
+    let n = df.height();
+    let lon = column_f64(&df, &s.lon_col)?;
+    let lat = column_f64(&df, &s.lat_col)?;
+
+    let scale = 10f64.powi(s.decimals as i32);
+    let round = |v: f64| (v * scale).round() / scale;
+    let key_of = |rlon: f64, rlat: f64| ((rlon * scale).round() as i64, (rlat * scale).round() as i64);
+
+    // Reduce to unique rounded locations; remember each row's key for the join.
+    let mut index: HashMap<(i64, i64), usize> = HashMap::new();
+    let mut uniq: Vec<(f64, f64)> = Vec::new();
+    let mut row_key: Vec<Option<(i64, i64)>> = Vec::with_capacity(n);
+    for i in 0..n {
+        let (lo, la) = (lon[i], lat[i]);
+        if lo.is_nan() || la.is_nan() {
+            row_key.push(None);
+            continue;
+        }
+        let (rlo, rla) = (round(lo), round(la));
+        let k = key_of(rlo, rla);
+        if !index.contains_key(&k) {
+            index.insert(k, uniq.len());
+            uniq.push((rlo, rla));
+        }
+        row_key.push(Some(k));
+    }
+
+    // Enrich unique locations in parallel.
+    let results: Vec<Vec<Value>> = uniq
+        .par_iter()
+        .map(|&(lo, la)| enr.enrich(lo, la))
+        .collect();
+
+    // Expand back to one value per input row and append the columns.
+    let specs = enr.outputs();
+    let mut new_cols: Vec<Series> = Vec::with_capacity(specs.len());
+    for (j, spec) in specs.iter().enumerate() {
+        match spec.kind {
+            OutputKind::Float => {
+                let mut col = Vec::with_capacity(n);
+                for rk in &row_key {
+                    let v = rk
+                        .and_then(|k| index.get(&k))
+                        .map(|&idx| match &results[idx][j] {
+                            Value::Float(f) => *f,
+                            _ => f64::NAN,
+                        })
+                        .unwrap_or(f64::NAN);
+                    col.push(v);
+                }
+                new_cols.push(Series::new(spec.name.as_str().into(), col));
+            }
+            OutputKind::Text => {
+                let mut col: Vec<Option<String>> = Vec::with_capacity(n);
+                for rk in &row_key {
+                    let v = rk.and_then(|k| index.get(&k)).and_then(|&idx| {
+                        match &results[idx][j] {
+                            Value::Text(t) => t.clone(),
+                            _ => None,
+                        }
+                    });
+                    col.push(v);
+                }
+                new_cols.push(Series::new(spec.name.as_str().into(), col));
+            }
+        }
+    }
+
+    let out = df.hstack(&new_cols)?;
+    eprintln!(
+        "[geoenrich] {} rows, {} unique locations -> {}",
+        n,
+        uniq.len(),
+        out_path.display()
+    );
+    io::write_frame(out, out_path, out_fmt)?;
+    Ok(())
+}

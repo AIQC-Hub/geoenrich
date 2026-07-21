@@ -1,0 +1,8 @@
+/target
+Cargo.lock
+/data
+*.parquet
+!tests/**/*.parquet
+
+# JetBrains IDE
+/.idea

@@ -37,11 +37,16 @@ This repository was scaffolded design-first. What is complete and what is stubbe
   writes. The pure-Rust LAEA projection and great-circle distance in
   `src/geo/projection.rs` are implemented and unit-tested. The dummy-enricher
   integration test in `tests/pipeline.rs` exercises the whole path.
-- Stubbed: the four modules' per-location spatial lookups. Each `enrich` returns
-  NaN (coast, depth) or empty (sea, place) and each `run` prints a one-line notice
-  so a stub run is never mistaken for real data. The `Cargo.toml` spatial
-  dependencies (`geo`, `rstar`, `shapefile`, `geojson`, `netcdf`) are commented
-  out until the algorithm that needs them is written.
+- Implemented: the `depth` module (`src/modules/depth.rs`), a GEBCO NetCDF grid
+  lookup keyed on `netcdf` (linking system HDF5). Nearest-cell by arithmetic,
+  serialized reads under a mutex (the system HDF5 serial build is not thread
+  safe), per-thread HDF5 diagnostic silencing, and a `tests/depth.rs` integration
+  test that builds a small synthetic grid.
+- Stubbed: the `coast`, `sea`, and `place` per-location spatial lookups. Each
+  `enrich` returns NaN (coast) or empty (sea, place) and each `run` prints a
+  one-line notice so a stub run is never mistaken for real data. The remaining
+  `Cargo.toml` spatial dependencies (`geo`, `rstar`, `shapefile`, `geojson`) are
+  commented out until the algorithm that needs them is written.
 
 Each module file's header comment states the planned algorithm.
 

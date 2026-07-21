@@ -6,6 +6,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `depth` module implemented against GEBCO gridded NetCDF: reads the `lat`/`lon`
+  axes once, then maps each point to its nearest grid cell by arithmetic (O(1),
+  no nearest-neighbor search) and reads the single `elevation` cell. Longitudes
+  are normalized to `[-180, 180)` and off-grid points yield NaN. New `--positive`
+  flag reports depth as positive below sea level. Reads link the system HDF5 /
+  NetCDF libraries (`netcdf` crate).
+
+### Changed
+
+- `depth` now requires `--data <GEBCO NetCDF file>` and errors clearly when it is
+  omitted, instead of printing the scaffold stub notice and emitting NaN.
+
 ## [0.1.0] - 2026-07-22
 
 ### Added

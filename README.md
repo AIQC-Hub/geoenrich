@@ -14,10 +14,11 @@ and `tsv.gz`. Each command reduces the input to unique rounded locations,
 processes those in parallel, and joins the results back onto every row, so a file
 with millions of rows but few distinct positions is cheap to enrich.
 
-> **Status:** scaffold. The CLI, I/O, config, parallel pipeline, and the pure-Rust
-> projection are complete and tested. The four spatial lookups are stubbed and
-> currently emit NaN or empty values (each run prints a notice). See `CLAUDE.md`
-> for what is implemented and the planned algorithm per module.
+> **Status:** in progress. The CLI, I/O, config, parallel pipeline, and the
+> pure-Rust projection are complete and tested. The `depth` module is implemented
+> (GEBCO grid lookup). The `coast`, `sea`, and `place` lookups are still stubbed
+> and emit NaN or empty values (each run prints a notice). See `CLAUDE.md` for
+> what is implemented and the planned algorithm per module.
 
 ## Install
 

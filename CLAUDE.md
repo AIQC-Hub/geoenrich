@@ -150,6 +150,16 @@ site's statistics form, so it requires `--mr-name` / `--mr-email` /
 `--mr-country` (and posts back the form's hidden anti-bot field empty), and it
 verifies the response is a zip, failing loudly when the form rejects it.
 
+`scripts/enrich.sh` (same ctddump-style bash: header doubles as `--help`,
+`log`/`run` tracing) chains several modules over one input, each reading the
+previous step's output so their columns accumulate into a single final file. A
+module runs when its data flag is given (`--coast`, `--depth`, `--sea`,
+`--countries`, `--nearest`); intermediates are Parquet in a `mktemp -d` dir
+removed by an EXIT trap (`--keep` to retain, `--dry-run` to preview). The trap
+and the temp-dir variable are global on purpose: a `local` in `main` is out of
+scope when the EXIT trap fires under `set -u`. The last module writes the final
+output, whose format follows its extension.
+
 ## Regions
 
 The default region is the whole globe. Other regions come from `--region`

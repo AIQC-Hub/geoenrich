@@ -21,3 +21,8 @@
 # Data
 
 - [Reference datasets](./data.md)
+
+# Helper scripts
+
+- [Overview](./helper-scripts.md)
+- [Enrich with several modules](./scripts.md)

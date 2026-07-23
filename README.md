@@ -50,6 +50,7 @@ Every command shares these options:
 | `-o, --output <FILE>` | `<stem>.<command>.<input format>` | Output file |
 | `--in-format <FMT>` | inferred, else parquet | `parquet`, `csv`, `tsv`, `csv.gz`, `tsv.gz`, `auto` |
 | `--out-format <FMT>` | inferred, else parquet | same set |
+| `--overwrite` | off | Replace clashing output columns instead of failing |
 | `--lon-col <NAME>` | `longitude` | Longitude column |
 | `--lat-col <NAME>` | `latitude` | Latitude column |
 | `--decimals <N>` | `3` | Rounding applied before de-duplicating |

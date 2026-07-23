@@ -74,6 +74,23 @@ pub fn run_module(
     let lon = column_f64(&df, &s.lon_col)?;
     let lat = column_f64(&df, &s.lat_col)?;
 
+    // Output columns already present in the input are an error by default,
+    // and are replaced in place (keeping their position) with --overwrite.
+    // Checked before enrichment so a clash fails fast.
+    let specs = enr.outputs();
+    let clashes: Vec<&str> = specs
+        .iter()
+        .map(|sp| sp.name.as_str())
+        .filter(|name| df.column(name).is_ok())
+        .collect();
+    if !clashes.is_empty() && !s.overwrite {
+        return Err(format!(
+            "the input already has output column(s) '{}'; pass --overwrite to replace them",
+            clashes.join("', '")
+        )
+        .into());
+    }
+
     let scale = 10f64.powi(s.decimals as i32);
     let round = |v: f64| (v * scale).round() / scale;
     let key_of = |rlon: f64, rlat: f64| ((rlon * scale).round() as i64, (rlat * scale).round() as i64);
@@ -104,7 +121,6 @@ pub fn run_module(
         .collect();
 
     // Expand back to one value per input row and append the columns.
-    let specs = enr.outputs();
     let mut new_cols: Vec<Series> = Vec::with_capacity(specs.len());
     for (j, spec) in specs.iter().enumerate() {
         match spec.kind {
@@ -138,7 +154,17 @@ pub fn run_module(
         }
     }
 
-    let out = df.hstack(&new_cols)?;
+    let out = if s.overwrite {
+        // `with_column` replaces a same-named column in place and appends the
+        // rest, so untouched input columns keep their order.
+        let mut out = df;
+        for col in new_cols {
+            out.with_column(col)?;
+        }
+        out
+    } else {
+        df.hstack(&new_cols)?
+    };
     eprintln!(
         "[geoenrich] {} rows, {} unique locations -> {}",
         n,

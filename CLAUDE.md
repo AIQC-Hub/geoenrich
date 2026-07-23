@@ -89,6 +89,9 @@ computes `enrich(lon, lat) -> Vec<Value>`. `run_module` does the rest: extract
 locations (integer-scaled keys, so the join never compares floats), enrich the
 unique set with rayon, expand the results back to one value per input row, hstack
 the new columns, and write. NaN coordinates get no key and therefore null output.
+An output column already present in the input is an error (caught before
+enrichment) unless `--overwrite` is set, which replaces it in place, keeping its
+position.
 
 **I/O** (`src/io.rs`): `resolve_format` infers the format from the extension
 (Parquet fallback); `read_frame` / `write_frame` handle all five formats. Gzip is

@@ -17,6 +17,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fails loudly when the form rejects the request instead of leaving a broken
   archive. The GISCO LAU bundle's EPSG 4326 (lon/lat) shapefile is unpacked
   from its nested zip, since geoenrich needs lon/lat coordinates.
+- New `--overwrite` flag on every command: when an output column already
+  exists in the input, it is replaced in place (keeping its position and
+  getting the output dtype) instead of the run failing. Without the flag a
+  clashing column is still an error, now caught before enrichment starts and
+  naming the column(s) and the flag.
 
 ### Changed
 

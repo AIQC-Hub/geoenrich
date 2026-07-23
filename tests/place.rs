@@ -16,6 +16,7 @@ fn settings() -> Settings {
         lat_col: "latitude".into(),
         decimals: 3,
         threads: None,
+        overwrite: false,
         bbox: BALTIC,
         proj_lon0: 19.5,
         proj_lat0: 59.5,

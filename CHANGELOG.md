@@ -14,11 +14,19 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   are normalized to `[-180, 180)` and off-grid points yield NaN. New `--positive`
   flag reports depth as positive below sea level. Reads link the system HDF5 /
   NetCDF libraries (`netcdf` crate).
-
+- `coast` module implemented against GSHHG shorelines: boundary segments of the
+  L1 (land/ocean) shapefile are cropped to the region box plus a 5 degree
+  margin, projected through the region LAEA, and indexed in an `rstar` R-tree;
+  each point gets the planar distance to the nearest segment in the chosen unit
+  (`--unit km|m`). Segments are dropped, never clipped, so cropping cannot
+  create artificial shoreline. `--data` accepts the `GSHHS_*_L1.shp` file or a
+  GSHHG resolution directory containing one.
 ### Changed
 
-- `depth` now requires `--data <GEBCO NetCDF file>` and errors clearly when it is
-  omitted, instead of printing the scaffold stub notice and emitting NaN.
+- `depth` now requires `--data <GEBCO NetCDF file>` and `coast` requires
+  `--data <GSHHG shapefile or directory>`; each errors clearly when its data
+  source is omitted, instead of printing the scaffold stub notice and emitting
+  NaN.
 
 ## [0.1.0] - 2026-07-22
 

@@ -15,10 +15,11 @@ processes those in parallel, and joins the results back onto every row, so a fil
 with millions of rows but few distinct positions is cheap to enrich.
 
 > **Status:** in progress. The CLI, I/O, config, parallel pipeline, and the
-> pure-Rust projection are complete and tested. The `depth` module is implemented
-> (GEBCO grid lookup). The `coast`, `sea`, and `place` lookups are still stubbed
-> and emit NaN or empty values (each run prints a notice). See `CLAUDE.md` for
-> what is implemented and the planned algorithm per module.
+> pure-Rust projection are complete and tested. The `depth` (GEBCO grid lookup)
+> and `coast` (nearest GSHHG shoreline by projected R-tree lookup) modules are
+> implemented. The `sea` and `place` lookups are still stubbed and emit empty
+> values (each run prints a notice). See `CLAUDE.md` for what is implemented
+> and the planned algorithm per module.
 
 ## Install
 
@@ -27,8 +28,8 @@ cargo build --release
 # binary at target/release/geoenrich
 ```
 
-The `depth` command reads GEBCO NetCDF and links the HDF5 C library, so once it is
-implemented you will need the dev headers (as with ctddump):
+The `depth` command reads GEBCO NetCDF and links the HDF5 / NetCDF C libraries,
+so you need the dev headers (as with ctddump):
 
 ```bash
 # Ubuntu / Debian

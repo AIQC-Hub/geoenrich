@@ -96,7 +96,20 @@ Run `geoenrich <command> --help` for the full interface.
 
 ## Data
 
-The reference datasets are downloaded separately (they are large and not bundled):
+The reference datasets are downloaded separately (they are large and not
+bundled). `scripts/download_data.sh` fetches and unpacks any of them into
+`./data/`, one sub-directory per source, matching the example paths above:
+
+```bash
+# GSHHG, GEBCO, Natural Earth, and GISCO need no details
+scripts/download_data.sh download gshhg gebco countries lau
+
+# the Marine Regions (IHO) download sits behind a short form
+scripts/download_data.sh --mr-name "Your Name" --mr-email you@example.org \
+  --mr-country Norway download iho
+```
+
+Run `scripts/download_data.sh --help` for all options. Sources:
 
 - GSHHG shorelines: https://www.soest.hawaii.edu/pwessel/gshhg/
 - GEBCO bathymetry: https://www.gebco.net/

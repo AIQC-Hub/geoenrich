@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-23
+
+### Added
+
+- New `atlantic` region preset (box -83, 20, -60, 70), covering the Atlantic
+  basin from the Nordic Seas to the Southern Ocean.
+- README now shows a latest-release badge that tracks the GitHub release
+  automatically.
+
 ## [0.5.0] - 2026-07-23
 
 ### Added

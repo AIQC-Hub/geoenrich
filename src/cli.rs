@@ -97,8 +97,8 @@ pub struct CommonArgs {
 /// from the resolved config; a named `--region` preset sets both at once.
 #[derive(Args, Debug)]
 pub struct RegionArgs {
-    /// Named region preset: global (default), baltic, norway, arctic, europe,
-    /// mediterranean
+    /// Named region preset: global (default), baltic, norway, arctic, atlantic,
+    /// europe, mediterranean
     #[arg(long)]
     pub region: Option<String>,
 

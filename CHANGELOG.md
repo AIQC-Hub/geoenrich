@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- New `nearest` command: for each input point, find the closest location in a
+  second table (`--to`) and append its name (`nearest_name`) and the distance
+  to it (`nearest_dist`). The two sets can be anything (measurements and fish
+  farms, stations and ports). The reference coordinate columns default to
+  `longitude`/`latitude` (`--to-lon-col`/`--to-lat-col`) and the name column to
+  `name` (`--name-field`); `--unit km|m` and `--name-column`/`--dist-column`
+  rename the outputs. Distances are great-circle, computed with a unit-sphere
+  R-tree, so they are exact anywhere on the globe with no region or projection
+  center. Reference rows with a missing coordinate are skipped.
+
 ## [0.4.0] - 2026-07-23
 
 ### Added

@@ -15,6 +15,7 @@ use crate::io::{format_ext, resolve_format};
 
 pub mod coast;
 pub mod depth;
+pub mod nearest;
 pub mod place;
 pub mod sea;
 

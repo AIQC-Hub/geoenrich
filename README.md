@@ -8,17 +8,20 @@ appends any of:
 - **depth**: bathymetric depth at the point (GEBCO).
 - **sea**: the sea or ocean name at the point (IHO Sea Areas).
 - **place**: the nearest country and municipality (Natural Earth + GISCO).
+- **nearest**: the nearest location in a second table you supply, and the
+  distance to it (any two sets, for example measurements and fish farms).
 
 It reads and writes Parquet (default), CSV, TSV, and the gzip variants `csv.gz`
 and `tsv.gz`. Each command reduces the input to unique rounded locations,
 processes those in parallel, and joins the results back onto every row, so a file
 with millions of rows but few distinct positions is cheap to enrich.
 
-> **Status:** all four modules are implemented and tested: `coast` (nearest
+> **Status:** all five modules are implemented and tested: `coast` (nearest
 > GSHHG shoreline by projected R-tree lookup), `depth` (GEBCO grid lookup),
-> `sea` (IHO point in polygon with a nearest fallback), and `place` (nearest
-> Natural Earth country and GISCO LAU municipality). See `CLAUDE.md` for the
-> algorithm and caveats per module.
+> `sea` (IHO point in polygon with a nearest fallback), `place` (nearest
+> Natural Earth country and GISCO LAU municipality), and `nearest` (nearest
+> point of a caller-supplied table by unit-sphere R-tree). See `CLAUDE.md` for
+> the algorithm and caveats per module.
 
 ## Install
 
@@ -62,6 +65,13 @@ preset (`global`, `baltic`, `norway`, `arctic`, `europe`, `mediterranean`) or
 explicit `--min-lon/--max-lon/--min-lat/--max-lat`, plus `--proj-lon0/--proj-lat0`
 for the distance projection center. The default region is the whole globe.
 
+The `nearest` command instead takes a second table (`--to`), the set of named
+locations to measure the distance to. Its coordinate columns default to
+`longitude`/`latitude` (`--to-lon-col`/`--to-lat-col`) and the name column to
+`name` (`--name-field`). Distances are great-circle (exact anywhere on the
+globe, so this command has no region or projection center), in kilometers by
+default or meters with `--unit m`.
+
 ### Examples
 
 ```bash
@@ -82,6 +92,10 @@ geoenrich sea cores.parquet --region norway \
 geoenrich place cores.parquet \
   --countries ./data/naturalearth/ne_10m_admin_0_countries.shp \
   --municipalities ./data/gisco/lau.shp
+
+# Nearest fish farm to each measurement, distance in km
+geoenrich nearest cores.parquet --to farms.parquet \
+  --name-field farm_name -o cores.nearest.parquet
 ```
 
 Run `geoenrich <command> --help` for the full interface.
@@ -94,6 +108,7 @@ Run `geoenrich <command> --help` for the full interface.
 | `depth` | `bathymetry` (rename with `--column`) |
 | `sea`   | `sea_name` (rename with `--column`) |
 | `place` | `country`, `country_code`, `municipality` |
+| `nearest` | `nearest_name`, `nearest_dist` (rename with `--name-column` / `--dist-column`) |
 
 ## Data
 

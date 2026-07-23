@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-07-23
+
+### Added
+
+- Project documentation site built with mdBook and published to GitHub Pages
+  at <https://aiqc-hub.github.io/geoenrich/>: an introduction, installation, a
+  page per command, reference pages (regions, output columns, configuration,
+  technical notes), and a reference-datasets page. A Pages workflow rebuilds
+  and deploys it on every change to `docs/`.
+
 ## [0.6.0] - 2026-07-23
 
 ### Added

@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-23
+
+### Added
+
+- Three region presets for `--region`: `arctic` (north of 60N), `europe`, and
+  `mediterranean`, alongside the existing `baltic`, `norway`, and `global`.
+
+### Changed
+
+- The default region is now `global` (the whole globe) instead of the Baltic
+  Sea box. Pass `--region baltic` (or explicit bounds) for the previous default.
+
 ## [0.3.0] - 2026-07-23
 
 ### Added

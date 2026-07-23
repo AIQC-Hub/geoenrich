@@ -52,7 +52,7 @@ pub struct CommonArgs {
     /// Input file (parquet, csv, tsv, csv.gz, tsv.gz)
     pub input: PathBuf,
 
-    /// Output file (default: <input stem>.<module>.parquet beside the input)
+    /// Output file (default: <input stem>.<module>.<input format> beside the input)
     #[arg(short, long)]
     pub output: Option<PathBuf>,
 

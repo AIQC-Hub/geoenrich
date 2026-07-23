@@ -106,7 +106,8 @@ needed, means an ellipsoidal LAEA in place of the spherical one.
 
 **Modules** (`src/modules/`): `coast`, `depth`, `sea`, `place`. Each builds its
 `Enricher` from a data-source path and options and calls `run_module`. Shared
-helpers: `default_output` (the `<stem>.<tag>.parquet` fallback) and
+helpers: `default_output` (the `<stem>.<tag>.<ext>` fallback, where `<ext>`
+matches the input format, so the output format defaults to the input's) and
 `shp_polygons` (whole-polygon shapefile read used by `sea` and `place`).
 
 ## Data sources (not bundled)

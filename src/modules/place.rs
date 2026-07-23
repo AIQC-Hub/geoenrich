@@ -152,7 +152,7 @@ pub fn run(args: PlaceArgs) -> Result<(), Box<dyn Error>> {
         .common
         .output
         .clone()
-        .unwrap_or_else(|| super::default_output(&args.common.input, "place"));
+        .unwrap_or_else(|| super::default_output(&args.common.input, "place", args.common.in_format));
 
     let proj = Laea::new(s.proj_lon0, s.proj_lat0);
     let enr = PlaceEnricher::open(&countries, args.municipalities.as_deref(), s.bbox, proj)?;

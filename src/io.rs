@@ -41,6 +41,19 @@ pub fn resolve_format(path: &Path, explicit: Format) -> Format {
     }
 }
 
+/// The canonical file extension for a concrete format, used to build default
+/// output names. `Auto` has no extension of its own and maps to parquet, the
+/// project default.
+pub fn format_ext(fmt: Format) -> &'static str {
+    match fmt {
+        Format::Parquet | Format::Auto => "parquet",
+        Format::Csv => "csv",
+        Format::Tsv => "tsv",
+        Format::CsvGz => "csv.gz",
+        Format::TsvGz => "tsv.gz",
+    }
+}
+
 fn is_tab(fmt: Format) -> bool {
     matches!(fmt, Format::Tsv | Format::TsvGz)
 }

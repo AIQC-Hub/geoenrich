@@ -18,6 +18,15 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   archive. The GISCO LAU bundle's EPSG 4326 (lon/lat) shapefile is unpacked
   from its nested zip, since geoenrich needs lon/lat coordinates.
 
+### Changed
+
+- The default output file (when `--output` is omitted) now keeps the input's
+  format and extension: `points.csv.gz` enriches to `points.<command>.csv.gz`
+  instead of `points.<command>.parquet`, with the whole `.csv.gz` suffix
+  replaced (no stray `.csv` in the stem). Inputs with an unrecognized
+  extension still default to Parquet, and an explicit `--output` or
+  `--out-format` behaves as before.
+
 ## [0.2.0] - 2026-07-23
 
 ### Added

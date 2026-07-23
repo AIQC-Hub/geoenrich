@@ -196,7 +196,7 @@ pub fn run(args: DepthArgs) -> Result<(), Box<dyn Error>> {
         .common
         .output
         .clone()
-        .unwrap_or_else(|| super::default_output(&args.common.input, "depth"));
+        .unwrap_or_else(|| super::default_output(&args.common.input, "depth", args.common.in_format));
 
     let enr = DepthEnricher::open(&data, args.column, args.positive)?;
     run_module(&enr, df, &s, &out_path, args.common.out_format)

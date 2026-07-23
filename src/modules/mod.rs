@@ -9,21 +9,36 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
+use crate::cli::Format;
 use crate::geo::vector::Rings;
+use crate::io::{format_ext, resolve_format};
 
 pub mod coast;
 pub mod depth;
 pub mod place;
 pub mod sea;
 
-/// Default output path when `--output` is omitted: `<stem>.<tag>.parquet` beside
-/// the input.
-pub(crate) fn default_output(input: &Path, tag: &str) -> PathBuf {
+/// Default output path when `--output` is omitted: the input renamed to
+/// `<stem>.<tag>.<ext>` beside it, where `<ext>` matches the input format, so
+/// the output format defaults to the input format. An unrecognized input
+/// extension falls back to parquet, the project default.
+pub(crate) fn default_output(input: &Path, tag: &str, in_fmt: Format) -> PathBuf {
+    let ext = format_ext(resolve_format(input, in_fmt));
+    // Strip the recognized format extension whole (".csv.gz" spans two Path
+    // extensions), so a gzip input does not leave a stray ".csv" in the stem.
+    const KNOWN: [&str; 6] = [".parquet", ".pq", ".csv.gz", ".tsv.gz", ".csv", ".tsv"];
     let stem = input
-        .file_stem()
+        .file_name()
         .and_then(|s| s.to_str())
+        .and_then(|n| {
+            let lower = n.to_ascii_lowercase();
+            KNOWN
+                .iter()
+                .find_map(|e| lower.ends_with(e).then(|| &n[..n.len() - e.len()]))
+        })
+        .or_else(|| input.file_stem().and_then(|s| s.to_str()))
         .unwrap_or("output");
-    let name = format!("{stem}.{tag}.parquet");
+    let name = format!("{stem}.{tag}.{ext}");
     match input.parent() {
         Some(dir) if !dir.as_os_str().is_empty() => dir.join(name),
         _ => PathBuf::from(name),
@@ -52,4 +67,25 @@ pub(crate) fn shp_polygons(
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_output_follows_input_format() {
+        let d = |p: &str, fmt| default_output(Path::new(p), "sea", fmt);
+        assert_eq!(d("dir/cores.parquet", Format::Auto), PathBuf::from("dir/cores.sea.parquet"));
+        assert_eq!(d("cores.csv", Format::Auto), PathBuf::from("cores.sea.csv"));
+        assert_eq!(d("cores.tsv", Format::Auto), PathBuf::from("cores.sea.tsv"));
+        // the whole ".csv.gz" is replaced: no stray ".csv" in the stem
+        assert_eq!(d("cores.csv.gz", Format::Auto), PathBuf::from("cores.sea.csv.gz"));
+        // ".pq" reads as parquet and normalizes to the canonical extension
+        assert_eq!(d("cores.pq", Format::Auto), PathBuf::from("cores.sea.parquet"));
+        // an explicit --in-format wins over the extension
+        assert_eq!(d("cores.dat", Format::Tsv), PathBuf::from("cores.sea.tsv"));
+        // unrecognized extension: parquet, the project default
+        assert_eq!(d("cores.dat", Format::Auto), PathBuf::from("cores.sea.parquet"));
+    }
 }

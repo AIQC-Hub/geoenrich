@@ -47,7 +47,7 @@ Every command shares these options:
 
 | Option | Default | Meaning |
 |--------|---------|---------|
-| `-o, --output <FILE>` | `<stem>.<command>.parquet` | Output file |
+| `-o, --output <FILE>` | `<stem>.<command>.<input format>` | Output file |
 | `--in-format <FMT>` | inferred, else parquet | `parquet`, `csv`, `tsv`, `csv.gz`, `tsv.gz`, `auto` |
 | `--out-format <FMT>` | inferred, else parquet | same set |
 | `--lon-col <NAME>` | `longitude` | Longitude column |

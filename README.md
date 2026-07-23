@@ -103,6 +103,19 @@ geoenrich nearest cores.parquet --to farms.parquet \
 
 Run `geoenrich <command> --help` for the full interface.
 
+To run several modules over one input and get a single file with all their new
+columns, use `scripts/enrich.sh`, which chains the selected modules and removes
+the intermediate files:
+
+```bash
+scripts/enrich.sh cores.parquet cores.enriched.parquet \
+  --coast ./data/gshhg/gshhg-shp-2.3.7/GSHHS_shp/f \
+  --depth ./data/gebco/GEBCO_2024_sub_ice.nc \
+  --nearest farms.parquet --nearest-name-field farm_name
+```
+
+Run `scripts/enrich.sh --help` for all options.
+
 ## Output columns
 
 | Command | Appended columns |

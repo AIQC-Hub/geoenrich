@@ -14,12 +14,11 @@ and `tsv.gz`. Each command reduces the input to unique rounded locations,
 processes those in parallel, and joins the results back onto every row, so a file
 with millions of rows but few distinct positions is cheap to enrich.
 
-> **Status:** in progress. The CLI, I/O, config, parallel pipeline, and the
-> pure-Rust projection are complete and tested. The `depth` (GEBCO grid lookup)
-> and `coast` (nearest GSHHG shoreline by projected R-tree lookup) modules are
-> implemented. The `sea` and `place` lookups are still stubbed and emit empty
-> values (each run prints a notice). See `CLAUDE.md` for what is implemented
-> and the planned algorithm per module.
+> **Status:** in progress. The `coast` (nearest GSHHG shoreline by projected
+> R-tree lookup), `depth` (GEBCO grid lookup), and `sea` (IHO point in polygon
+> with a nearest fallback) modules are implemented and tested. The `place`
+> lookup is still stubbed and emits empty values (each run prints a notice).
+> See `CLAUDE.md` for the algorithm and caveats per module.
 
 ## Install
 

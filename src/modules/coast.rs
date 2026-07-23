@@ -27,36 +27,9 @@ use rstar::{PointDistance, RTree, RTreeObject, AABB};
 
 use crate::cli::{CoastArgs, DistUnit};
 use crate::config::{resolve, BBox, Settings};
+use crate::geo::vector::{expand, point_seg_dist2, CROP_MARGIN_DEG};
 use crate::geo::Laea;
 use crate::pipeline::{run_module, Enricher, OutputKind, OutputSpec, Value};
-
-/// Extra degrees added around the region box when cropping coastline, so points
-/// near a region edge still see coast lying just outside it.
-const CROP_MARGIN_DEG: f64 = 5.0;
-
-/// Squared distance from point `p` to segment `a`-`b`, all in the same plane.
-fn point_seg_dist2(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f64) -> f64 {
-    let (dx, dy) = (bx - ax, by - ay);
-    let len2 = dx * dx + dy * dy;
-    let (cx, cy) = if len2 <= 0.0 {
-        (ax, ay) // degenerate segment: a == b
-    } else {
-        let t = (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0);
-        (ax + t * dx, ay + t * dy)
-    };
-    let (ex, ey) = (px - cx, py - cy);
-    ex * ex + ey * ey
-}
-
-/// Region box grown by `m` degrees on every side (used to crop coastline).
-fn expand(b: &BBox, m: f64) -> BBox {
-    BBox {
-        min_lon: b.min_lon - m,
-        max_lon: b.max_lon + m,
-        min_lat: b.min_lat - m,
-        max_lat: b.max_lat + m,
-    }
-}
 
 /// One shoreline segment in projected (LAEA) meters.
 struct Segment {

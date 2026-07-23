@@ -165,6 +165,10 @@ pub struct SeaArgs {
     #[arg(long)]
     pub data: Option<PathBuf>,
 
+    /// Property / attribute field holding the sea name
+    #[arg(long, default_value = "NAME")]
+    pub name_field: String,
+
     /// Output column name
     #[arg(long, default_value = "sea_name")]
     pub column: String,

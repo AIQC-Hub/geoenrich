@@ -21,12 +21,22 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`--unit km|m`). Segments are dropped, never clipped, so cropping cannot
   create artificial shoreline. `--data` accepts the `GSHHS_*_L1.shp` file or a
   GSHHG resolution directory containing one.
+- `sea` module implemented against IHO Sea Areas (Marine Regions GeoJSON or
+  shapefile): features are cropped whole to the region box plus margin, feature
+  bounding boxes are indexed in an R-tree, and each point is resolved by an
+  even-odd point-in-polygon test with a nearest-boundary fallback for points
+  that fall just inland (fjords). New `--name-field` flag selects the name
+  property (default `NAME`).
+- Shared vector-geometry helpers in `geo::vector`: point-to-segment distance,
+  tagged R-tree segments, even-odd point in polygon, and a `PolygonIndex`
+  combining containment with a nearest-boundary fallback.
+
 ### Changed
 
-- `depth` now requires `--data <GEBCO NetCDF file>` and `coast` requires
-  `--data <GSHHG shapefile or directory>`; each errors clearly when its data
-  source is omitted, instead of printing the scaffold stub notice and emitting
-  NaN.
+- `depth` now requires `--data <GEBCO NetCDF file>` and `coast` and `sea`
+  require `--data`; each errors clearly when its data source is omitted,
+  instead of printing the scaffold stub notice and emitting NaN or empty
+  values.
 
 ## [0.1.0] - 2026-07-22
 

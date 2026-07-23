@@ -20,16 +20,13 @@ polars = { version = "0.43", features = ["lazy", "parquet", "csv"] }
 # libraries, same system dependency as ctddump.
 netcdf = "0.12"
 
-# Vector geometry for the coast module: GSHHG shoreline shapefiles indexed in an
-# R-tree of boundary segments. Point-to-segment distance is hand-rolled against
-# the pure-Rust LAEA projection, so `geo` is not needed yet.
+# Vector geometry for the coast, sea, and place modules: shapefile and GeoJSON
+# polygons indexed in rstar R-trees. Point-to-segment distance and point in
+# polygon are hand-rolled against the pure-Rust LAEA projection, so `geo` is
+# not needed.
 rstar = "0.13"
 shapefile = "0.9"
-
-# Remaining spatial dependencies are added per module as each algorithm is
-# implemented, so the build stays light. Planned additions (see CLAUDE.md):
-#   geojson  IHO Sea Areas (Marine Regions GeoJSON), sea module
-#   shapefile is already present; place will reuse rstar + shapefile
+geojson = "0.24"
 
 [dev-dependencies]
 tempfile = "3"

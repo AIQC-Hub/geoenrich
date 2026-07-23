@@ -1,28 +1,85 @@
 //! Sea / ocean name from IHO Sea Areas polygons (point in polygon).
 //!
-//! Planned algorithm:
-//!   1. Read the IHO Sea Areas (Marine Regions GeoJSON or shapefile), make valid.
-//!   2. Index polygon bounding boxes in an `rstar` R-tree.
-//!   3. Per location: query candidate polygons and test containment with
-//!      `geo::Contains`. If a point falls just inland (common in narrow fjords),
-//!      fall back to the nearest polygon by planar (region-LAEA) distance.
-//! Point-in-polygon in lon/lat is fine here: sea boundaries are coarse relative
-//! to the rounding, so no projection is needed for the containment test itself.
+//! Algorithm (pure Rust):
+//!   1. Read the IHO Sea Areas (Marine Regions GeoJSON or shapefile) and keep
+//!      every feature whose bounding box intersects the region box expanded by
+//!      a margin. Features are kept whole, never clipped, so containment stays
+//!      exact.
+//!   2. Index feature bounding boxes in an `rstar` R-tree; containment is an
+//!      even-odd ray cast over the candidate features only.
+//!   3. A point inside no feature (just inland, common in narrow fjords) falls
+//!      back to the feature with the nearest boundary segment by planar
+//!      (region-LAEA) distance.
+//!
+//! Point-in-polygon runs in plain lon/lat: sea boundaries are coarse relative
+//! to the coordinate rounding, so the containment test needs no projection.
+//! Features without the name property are skipped; an input whose features all
+//! lack it is rejected so a wrong `--name-field` fails loudly.
 
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::cli::SeaArgs;
 use crate::config::{resolve, BBox, Settings};
+use crate::geo::vector::{PolygonIndex, Rings, CROP_MARGIN_DEG};
+use crate::geo::Laea;
 use crate::pipeline::{run_module, Enricher, OutputKind, OutputSpec, Value};
 
 pub struct SeaEnricher {
-    #[allow(dead_code)]
-    data: Option<PathBuf>,
+    index: PolygonIndex<String>,
     column: String,
-    // Region box, used to crop the polygon set at load time.
-    #[allow(dead_code)]
-    bbox: BBox,
+}
+
+impl SeaEnricher {
+    /// Build the enricher from named features already in memory. Used by
+    /// [`SeaEnricher::open`] and by tests, so the geometry can be exercised
+    /// without a data file on disk.
+    pub fn from_features(
+        feats: Vec<(Rings, String)>,
+        region: BBox,
+        proj: Laea,
+        column: String,
+    ) -> Self {
+        SeaEnricher {
+            index: PolygonIndex::build(feats, region, CROP_MARGIN_DEG, proj),
+            column,
+        }
+    }
+
+    /// Open an IHO Sea Areas file (GeoJSON `.geojson` / `.json`, or a
+    /// shapefile `.shp`) and index its named polygons cropped to `region`.
+    pub fn open(
+        data: &Path,
+        name_field: &str,
+        region: BBox,
+        proj: Laea,
+        column: String,
+    ) -> Result<Self, Box<dyn Error>> {
+        let ext = data
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let feats = match ext.as_str() {
+            "geojson" | "json" => geojson_features(data, name_field)?,
+            "shp" => shp_features(data, name_field)?,
+            _ => {
+                return Err(format!(
+                    "sea data must be .geojson, .json, or .shp: {}",
+                    data.display()
+                )
+                .into())
+            }
+        };
+        if feats.is_empty() {
+            return Err(format!(
+                "no polygon features with a '{name_field}' name in {}; check --name-field",
+                data.display()
+            )
+            .into());
+        }
+        Ok(Self::from_features(feats, region, proj, column))
+    }
 }
 
 impl Enricher for SeaEnricher {
@@ -33,14 +90,80 @@ impl Enricher for SeaEnricher {
         }])
     }
 
-    fn enrich(&self, _lon: f64, _lat: f64) -> Vec<Value> {
-        // TODO: point-in-polygon against IHO areas, nearest-polygon fallback.
-        Vec::from([Value::Text(None)])
+    fn enrich(&self, lon: f64, lat: f64) -> Vec<Value> {
+        Vec::from([Value::Text(self.index.locate(lon, lat).cloned())])
     }
+}
+
+/// Read named polygon features from a Marine Regions style GeoJSON
+/// FeatureCollection. MultiPolygons become one feature per part, all sharing
+/// the name, which changes neither containment nor the nearest fallback.
+fn geojson_features(path: &Path, name_field: &str) -> Result<Vec<(Rings, String)>, Box<dyn Error>> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let gj: geojson::GeoJson = text
+        .parse()
+        .map_err(|e| format!("invalid GeoJSON {}: {e}", path.display()))?;
+    let geojson::GeoJson::FeatureCollection(fc) = gj else {
+        return Err(format!("{} is not a GeoJSON FeatureCollection", path.display()).into());
+    };
+
+    let mut feats = Vec::new();
+    for f in fc.features {
+        let name = f
+            .properties
+            .as_ref()
+            .and_then(|m| m.get(name_field))
+            .and_then(|v| v.as_str())
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        let (Some(name), Some(geom)) = (name, f.geometry) else {
+            continue;
+        };
+        match geom.value {
+            geojson::Value::Polygon(p) => feats.push((poly_rings(&p), name)),
+            geojson::Value::MultiPolygon(mp) => {
+                for p in &mp {
+                    feats.push((poly_rings(p), name.clone()));
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(feats)
+}
+
+/// GeoJSON polygon coordinates to lon/lat ring tuples.
+fn poly_rings(p: &[Vec<Vec<f64>>]) -> Rings {
+    p.iter()
+        .map(|ring| {
+            ring.iter()
+                .filter(|pos| pos.len() >= 2)
+                .map(|pos| (pos[0], pos[1]))
+                .collect()
+        })
+        .collect()
+}
+
+/// Read named polygon features from a shapefile's shapes and DBF records.
+fn shp_features(path: &Path, name_field: &str) -> Result<Vec<(Rings, String)>, Box<dyn Error>> {
+    let mut feats = Vec::new();
+    for (rings, record) in super::shp_polygons(path)? {
+        if let Some(shapefile::dbase::FieldValue::Character(Some(name))) = record.get(name_field) {
+            let name = name.trim().to_string();
+            if !name.is_empty() {
+                feats.push((rings, name));
+            }
+        }
+    }
+    Ok(feats)
 }
 
 pub fn run(args: SeaArgs) -> Result<(), Box<dyn Error>> {
     let s: Settings = resolve(&args.common, Some(&args.region))?;
+    let data = args
+        .data
+        .ok_or("sea requires --data <IHO Sea Areas GeoJSON or shapefile>")?;
     let df = crate::io::read_frame(&args.common.input, args.common.in_format)?;
     let out_path = args
         .common
@@ -48,12 +171,7 @@ pub fn run(args: SeaArgs) -> Result<(), Box<dyn Error>> {
         .clone()
         .unwrap_or_else(|| super::default_output(&args.common.input, "sea"));
 
-    let enr = SeaEnricher {
-        data: args.data,
-        column: args.column,
-        bbox: s.bbox,
-    };
-
-    super::stub_notice("sea", "empty");
+    let proj = Laea::new(s.proj_lon0, s.proj_lat0);
+    let enr = SeaEnricher::open(&data, &args.name_field, s.bbox, proj, args.column)?;
     run_module(&enr, df, &s, &out_path, args.common.out_format)
 }

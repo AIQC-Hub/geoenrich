@@ -1,9 +1,10 @@
 //! Pure-Rust geometry: no PROJ / GDAL, so consuming projects need no extra
-//! system libraries. Currently a spherical LAEA projection (for planar distances
-//! in a region) and a great-circle distance. Vector-geometry helpers (point in
-//! polygon, nearest feature) will land here alongside `geo` + `rstar` when the
-//! coast/sea/place algorithms are implemented.
+//! system libraries. A spherical LAEA projection (for planar distances in a
+//! region), a great-circle distance, and the vector helpers (point to segment,
+//! point in polygon, nearest feature) shared by the coast, sea, and place
+//! modules.
 
 pub mod projection;
+pub mod vector;
 
 pub use projection::{haversine_m, Laea};

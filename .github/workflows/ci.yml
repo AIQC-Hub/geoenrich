@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    # Strip debuginfo from every crate. The integration tests each link a full
+    # static copy of Polars; with debuginfo their object files exhaust the
+    # runner's disk and `lld` dies with a SIGBUS during linking. debuginfo=0
+    # shrinks them by ~an order of magnitude (CI only needs pass/fail, not
+    # line-numbered backtraces).
+    env:
+      RUSTFLAGS: "-C debuginfo=0"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runner ships ~25 GB of toolchains this job never touches. Reclaiming
+      # them up front leaves headroom for the Polars build artifacts and, at the
+      # end of the job, for the cache tarball the post step writes.
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+                      /usr/local/share/boost /usr/share/swift
+          sudo docker image prune --all --force || true
+          df -h /
+
+      # The depth module reads GEBCO NetCDF through the netcdf crate, which links
+      # the system HDF5 / NetCDF C libraries; the build and its test need these.
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libhdf5-dev libnetcdf-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      # Purpose-built Rust cache rather than a raw actions/cache of `target`.
+      # It saves only the *dependency* artifacts: before writing the tarball it
+      # drops `incremental/` and every artifact belonging to this workspace's own
+      # crates. That matters here because each integration-test binary statically
+      # links its own copy of Polars, so a whole-`target` tarball ran the runner
+      # out of disk while compressing (zstd "No space left on device").
+      - name: Cache Cargo registry and dependency builds
+        uses: Swatinem/rust-cache@v2
+
+      # The tests need no downloaded reference data: the geometry tests build
+      # their features in memory and the depth test builds a small synthetic
+      # NetCDF grid, so there is nothing to fetch first.
+      - name: Run tests
+        run: cargo test
+
+      # Runs before the cache post step (post steps execute after every main
+      # step), so the tarball is written with the disk this frees. The test
+      # binaries are never cached, so their incremental artifacts are not worth
+      # keeping.
+      - name: Reclaim disk before the cache is saved
+        if: always()
+        run: |
+          rm -rf target/debug/incremental
+          df -h /

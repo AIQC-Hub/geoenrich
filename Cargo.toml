@@ -1,12 +1,18 @@
 [package]
 name = "geoenrich"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 license = "MIT"
 description = "Enrich longitude/latitude points with coast distance, bathymetric depth, sea name, and nearest country/municipality"
+repository = "https://github.com/AIQC-Hub/geoenrich"
+homepage = "https://aiqc-hub.github.io/geoenrich/"
+documentation = "https://aiqc-hub.github.io/geoenrich/"
 readme = "README.md"
 keywords = ["geospatial", "gis", "oceanography", "parquet", "cli"]
 categories = ["command-line-utilities", "science"]
+# Keep the published crate lean: the docs book, CI config, and internal notes
+# are not needed to build or use the crate (the scripts are, so they stay).
+exclude = ["CLAUDE.md", ".github/", "docs/"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

@@ -58,9 +58,9 @@ Every command shares these options:
 | `-c, --config <TOML>` | none | Config file (CLI flags override it) |
 
 The `coast`, `sea`, and `place` commands also take region options: a `--region`
-preset (`baltic`, `norway`, `global`) or explicit `--min-lon/--max-lon/--min-lat/
---max-lat`, plus `--proj-lon0/--proj-lat0` for the distance projection center.
-Defaults target the Baltic Sea.
+preset (`global`, `baltic`, `norway`, `arctic`, `europe`, `mediterranean`) or
+explicit `--min-lon/--max-lon/--min-lat/--max-lat`, plus `--proj-lon0/--proj-lat0`
+for the distance projection center. The default region is the whole globe.
 
 ### Examples
 
@@ -74,7 +74,7 @@ geoenrich coast cores.parquet \
 geoenrich depth cores.csv.gz --data ./data/gebco/GEBCO_2024_sub_ice.nc \
   -o cores.depth.csv.gz
 
-# Sea name, for the Norway region instead of the Baltic default
+# Sea name, cropping the reference data to the Norway region
 geoenrich sea cores.parquet --region norway \
   --data ./data/iho/iho_sea_areas.geojson
 

@@ -33,12 +33,20 @@ impl BBox {
     }
 }
 
-/// The Baltic Sea box from the reference R workflow, used when nothing else is set.
+/// The Baltic Sea box from the reference R workflow.
 pub const BALTIC: BBox = BBox {
     min_lon: 8.0,
     max_lon: 31.0,
     min_lat: 53.0,
     max_lat: 66.0,
+};
+
+/// The whole globe, used as the default when no region is set.
+pub const GLOBAL: BBox = BBox {
+    min_lon: -180.0,
+    max_lon: 180.0,
+    min_lat: -90.0,
+    max_lat: 90.0,
 };
 
 /// Everything a module needs after CLI + config are merged.
@@ -59,7 +67,10 @@ pub fn preset_bbox(name: &str) -> Option<BBox> {
     match name.to_ascii_lowercase().as_str() {
         "baltic" => Some(BALTIC),
         "norway" => Some(BBox { min_lon: -10.0, max_lon: 45.0, min_lat: 55.0, max_lat: 85.0 }),
-        "global" => Some(BBox { min_lon: -180.0, max_lon: 180.0, min_lat: -90.0, max_lat: 90.0 }),
+        "arctic" => Some(BBox { min_lon: -180.0, max_lon: 180.0, min_lat: 60.0, max_lat: 90.0 }),
+        "europe" => Some(BBox { min_lon: -25.0, max_lon: 45.0, min_lat: 34.0, max_lat: 72.0 }),
+        "mediterranean" => Some(BBox { min_lon: -6.0, max_lon: 37.0, min_lat: 30.0, max_lat: 46.0 }),
+        "global" => Some(GLOBAL),
         _ => None,
     }
 }
@@ -90,7 +101,7 @@ pub fn resolve(common: &CommonArgs, region: Option<&RegionArgs>) -> Result<Setti
     };
 
     let region_name = region.and_then(|r| r.region.clone()).or_else(|| fc.region.clone());
-    let mut bbox = region_name.as_deref().and_then(preset_bbox).unwrap_or(BALTIC);
+    let mut bbox = region_name.as_deref().and_then(preset_bbox).unwrap_or(GLOBAL);
 
     if let Some(v) = region.and_then(|r| r.min_lon).or(fc.min_lon) { bbox.min_lon = v; }
     if let Some(v) = region.and_then(|r| r.max_lon).or(fc.max_lon) { bbox.max_lon = v; }
@@ -111,4 +122,27 @@ pub fn resolve(common: &CommonArgs, region: Option<&RegionArgs>) -> Result<Setti
         proj_lon0,
         proj_lat0,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn named_presets_resolve() {
+        for name in ["baltic", "norway", "arctic", "europe", "mediterranean", "global"] {
+            assert!(preset_bbox(name).is_some(), "missing preset '{name}'");
+        }
+        // case-insensitive; an unknown name is None
+        assert!(preset_bbox("EUROPE").is_some());
+        assert!(preset_bbox("atlantis").is_none());
+    }
+
+    #[test]
+    fn default_region_is_global() {
+        // No preset and no bounds means the whole globe.
+        let region_name: Option<&str> = None;
+        let b = region_name.and_then(preset_bbox).unwrap_or(GLOBAL);
+        assert_eq!((b.min_lon, b.max_lon, b.min_lat, b.max_lat), (-180.0, 180.0, -90.0, 90.0));
+    }
 }

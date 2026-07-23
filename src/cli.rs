@@ -144,6 +144,11 @@ pub struct DepthArgs {
     #[arg(long)]
     pub data: Option<PathBuf>,
 
+    /// Report depth as positive below sea level (negate GEBCO elevation, which is
+    /// negative under water); land then reads negative
+    #[arg(long)]
+    pub positive: bool,
+
     /// Output column name
     #[arg(long, default_value = "bathymetry")]
     pub column: String,
@@ -159,6 +164,10 @@ pub struct SeaArgs {
     /// IHO Sea Areas polygons (GeoJSON or shapefile)
     #[arg(long)]
     pub data: Option<PathBuf>,
+
+    /// Property / attribute field holding the sea name
+    #[arg(long, default_value = "NAME")]
+    pub name_field: String,
 
     /// Output column name
     #[arg(long, default_value = "sea_name")]

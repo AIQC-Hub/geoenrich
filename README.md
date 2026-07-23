@@ -14,10 +14,11 @@ and `tsv.gz`. Each command reduces the input to unique rounded locations,
 processes those in parallel, and joins the results back onto every row, so a file
 with millions of rows but few distinct positions is cheap to enrich.
 
-> **Status:** scaffold. The CLI, I/O, config, parallel pipeline, and the pure-Rust
-> projection are complete and tested. The four spatial lookups are stubbed and
-> currently emit NaN or empty values (each run prints a notice). See `CLAUDE.md`
-> for what is implemented and the planned algorithm per module.
+> **Status:** all four modules are implemented and tested: `coast` (nearest
+> GSHHG shoreline by projected R-tree lookup), `depth` (GEBCO grid lookup),
+> `sea` (IHO point in polygon with a nearest fallback), and `place` (nearest
+> Natural Earth country and GISCO LAU municipality). See `CLAUDE.md` for the
+> algorithm and caveats per module.
 
 ## Install
 
@@ -26,8 +27,8 @@ cargo build --release
 # binary at target/release/geoenrich
 ```
 
-The `depth` command reads GEBCO NetCDF and links the HDF5 C library, so once it is
-implemented you will need the dev headers (as with ctddump):
+The `depth` command reads GEBCO NetCDF and links the HDF5 / NetCDF C libraries,
+so you need the dev headers (as with ctddump):
 
 ```bash
 # Ubuntu / Debian

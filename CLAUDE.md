@@ -28,22 +28,35 @@ Do not use em dashes in any human-facing text: `README.md`, `CHANGELOG.md`, docs
 generated output, help text, and log lines. Use a colon, comma, parentheses, a
 semicolon, or a reworded sentence instead. (Carried over from `ctddump`.)
 
-## Scaffold status
+## Implementation status
 
-This repository was scaffolded design-first. What is complete and what is stubbed:
+The scaffold (CLI, config resolution, multi-format I/O, and the shared pipeline
+`pipeline::run_module`) and all four modules are implemented and tested:
 
-- Complete: the CLI, config resolution, multi-format I/O, and the shared pipeline
-  (`pipeline::run_module`) that de-duplicates locations, parallelizes, joins, and
-  writes. The pure-Rust LAEA projection and great-circle distance in
-  `src/geo/projection.rs` are implemented and unit-tested. The dummy-enricher
-  integration test in `tests/pipeline.rs` exercises the whole path.
-- Stubbed: the four modules' per-location spatial lookups. Each `enrich` returns
-  NaN (coast, depth) or empty (sea, place) and each `run` prints a one-line notice
-  so a stub run is never mistaken for real data. The `Cargo.toml` spatial
-  dependencies (`geo`, `rstar`, `shapefile`, `geojson`, `netcdf`) are commented
-  out until the algorithm that needs them is written.
+- `depth` (`src/modules/depth.rs`): GEBCO NetCDF grid lookup keyed on `netcdf`
+  (linking system HDF5). Nearest-cell by arithmetic, serialized reads under a
+  mutex (the system HDF5 serial build is not thread safe), per-thread HDF5
+  diagnostic silencing, and a `tests/depth.rs` integration test that builds a
+  small synthetic grid.
+- `coast` (`src/modules/coast.rs`): GSHHG L1 shoreline segments cropped to the
+  region plus a 5 degree margin, projected through the region LAEA, indexed in
+  an `rstar` R-tree; nearest-segment planar distance in km or m. Segments are
+  dropped, never clipped, so cropping cannot create artificial shoreline.
+- `sea` (`src/modules/sea.rs`): IHO Sea Areas from GeoJSON or shapefile,
+  features cropped whole, even-odd point in polygon over R-tree bbox candidates
+  with a nearest-boundary fallback for points just inland.
+- `place` (`src/modules/place.rs`): Natural Earth countries plus optional GISCO
+  LAU municipalities, both resolved containment-first with a nearest-boundary
+  fallback; DBF attribute fields auto-detected from candidate lists (the
+  Natural Earth `-99` code placeholder reads as missing).
 
-Each module file's header comment states the planned algorithm.
+The shared vector geometry (point-to-segment distance, tagged R-tree segments,
+even-odd point in polygon, and the containment-plus-nearest `PolygonIndex` used
+by `sea` and `place`) lives in `src/geo/vector.rs` and is hand-rolled, so the
+`geo` crate is not a dependency. Each module file's header comment states its
+algorithm and caveats. Geometry tests run against in-memory features
+(`from_rings` / `from_features` constructors), so no large fixture files are
+committed; `tests/sea.rs` also exercises the GeoJSON open path.
 
 ## Commands
 

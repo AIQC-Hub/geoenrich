@@ -6,3 +6,6 @@ Cargo.lock
 
 # JetBrains IDE
 /.idea
+
+# mdBook build output
+docs/book

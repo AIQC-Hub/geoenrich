@@ -47,9 +47,10 @@ Every command shares these options:
 
 | Option | Default | Meaning |
 |--------|---------|---------|
-| `-o, --output <FILE>` | `<stem>.<command>.parquet` | Output file |
+| `-o, --output <FILE>` | `<stem>.<command>.<input format>` | Output file |
 | `--in-format <FMT>` | inferred, else parquet | `parquet`, `csv`, `tsv`, `csv.gz`, `tsv.gz`, `auto` |
 | `--out-format <FMT>` | inferred, else parquet | same set |
+| `--overwrite` | off | Replace clashing output columns instead of failing |
 | `--lon-col <NAME>` | `longitude` | Longitude column |
 | `--lat-col <NAME>` | `latitude` | Latitude column |
 | `--decimals <N>` | `3` | Rounding applied before de-duplicating |
@@ -96,7 +97,20 @@ Run `geoenrich <command> --help` for the full interface.
 
 ## Data
 
-The reference datasets are downloaded separately (they are large and not bundled):
+The reference datasets are downloaded separately (they are large and not
+bundled). `scripts/download_data.sh` fetches and unpacks any of them into
+`./data/`, one sub-directory per source, matching the example paths above:
+
+```bash
+# GSHHG, GEBCO, Natural Earth, and GISCO need no details
+scripts/download_data.sh download gshhg gebco countries lau
+
+# the Marine Regions (IHO) download sits behind a short form
+scripts/download_data.sh --mr-name "Your Name" --mr-email you@example.org \
+  --mr-country Norway download iho
+```
+
+Run `scripts/download_data.sh --help` for all options. Sources:
 
 - GSHHG shorelines: https://www.soest.hawaii.edu/pwessel/gshhg/
 - GEBCO bathymetry: https://www.gebco.net/

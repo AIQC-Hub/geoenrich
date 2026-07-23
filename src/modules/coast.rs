@@ -216,7 +216,7 @@ pub fn run(args: CoastArgs) -> Result<(), Box<dyn Error>> {
         .common
         .output
         .clone()
-        .unwrap_or_else(|| super::default_output(&args.common.input, "coast"));
+        .unwrap_or_else(|| super::default_output(&args.common.input, "coast", args.common.in_format));
 
     let proj = Laea::new(s.proj_lon0, s.proj_lat0);
     let enr = CoastEnricher::open(&data, s.bbox, proj, args.unit, args.column)?;

@@ -89,6 +89,9 @@ computes `enrich(lon, lat) -> Vec<Value>`. `run_module` does the rest: extract
 locations (integer-scaled keys, so the join never compares floats), enrich the
 unique set with rayon, expand the results back to one value per input row, hstack
 the new columns, and write. NaN coordinates get no key and therefore null output.
+An output column already present in the input is an error (caught before
+enrichment) unless `--overwrite` is set, which replaces it in place, keeping its
+position.
 
 **I/O** (`src/io.rs`): `resolve_format` infers the format from the extension
 (Parquet fallback); `read_frame` / `write_frame` handle all five formats. Gzip is
@@ -106,7 +109,9 @@ needed, means an ellipsoidal LAEA in place of the spherical one.
 
 **Modules** (`src/modules/`): `coast`, `depth`, `sea`, `place`. Each builds its
 `Enricher` from a data-source path and options and calls `run_module`. Shared
-helpers: `default_output` (the `<stem>.<tag>.parquet` fallback) and `stub_notice`.
+helpers: `default_output` (the `<stem>.<tag>.<ext>` fallback, where `<ext>`
+matches the input format, so the output format defaults to the input's) and
+`shp_polygons` (whole-polygon shapefile read used by `sea` and `place`).
 
 ## Data sources (not bundled)
 
@@ -123,8 +128,16 @@ its data path by flag (`--data`, or `--countries` / `--municipalities` for
 - Natural Earth countries: https://www.naturalearthdata.com/.
 - Eurostat GISCO LAU (municipalities): https://ec.europa.eu/eurostat/web/gisco.
 
-A `scripts/` directory with download helpers (in the ctddump style) can be added
-once the modules read real data.
+`scripts/download_data.sh` (ctddump-style bash: the header comment doubles as
+`--help`, `log`/`run` tracing, a confirm prompt, parallel per-dataset workers)
+downloads and unpacks any of the five sources into `data/`, one sub-directory
+each, matching the README example paths. Caveats baked into it: the GEBCO grid
+is multi-GB and resumes an interrupted download; the GISCO LAU bundle nests one
+zip per projection and only the EPSG 4326 (lon/lat) layer is unpacked, since
+the modules expect lon/lat; the Marine Regions (IHO) download submits the
+site's statistics form, so it requires `--mr-name` / `--mr-email` /
+`--mr-country` (and posts back the form's hidden anti-bot field empty), and it
+verifies the response is a zip, failing loudly when the form rejects it.
 
 ## Regions
 

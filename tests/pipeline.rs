@@ -31,6 +31,7 @@ fn settings() -> Settings {
         lat_col: "latitude".into(),
         decimals: 3,
         threads: None,
+        overwrite: false,
         bbox: BALTIC,
         proj_lon0: 19.5,
         proj_lat0: 59.5,
@@ -64,6 +65,51 @@ fn appends_columns_and_dedups_rows() {
     let lbl = back.column("lbl").unwrap().str().unwrap();
     assert_eq!(lbl.get(0), Some("18.0,59.0"));
     assert_eq!(lbl.get(2), Some("24.0,60.0"));
+}
+
+#[test]
+fn existing_output_column_errors_without_overwrite() {
+    let df = df! {
+        "longitude" => [18.0f64],
+        "latitude"  => [59.0f64],
+        "val"       => [1.0f64],
+    }
+    .unwrap();
+
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("out.parquet");
+    let err = run_module(&Dummy, df, &settings(), &out, Format::Parquet)
+        .expect_err("a clashing column must fail without --overwrite");
+    assert!(err.to_string().contains("--overwrite"), "unexpected error: {err}");
+    assert!(err.to_string().contains("'val'"), "unexpected error: {err}");
+}
+
+#[test]
+fn overwrite_replaces_existing_columns_in_place() {
+    // "val" sits between the coordinate columns and holds text, so the test
+    // covers both the in-place replacement (position kept) and a dtype change.
+    let df = df! {
+        "longitude" => [18.0f64, 24.0],
+        "val"       => ["old", "old"],
+        "latitude"  => [59.0f64, 60.0],
+    }
+    .unwrap();
+
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("out.parquet");
+    let mut s = settings();
+    s.overwrite = true;
+    run_module(&Dummy, df, &s, &out, Format::Parquet).unwrap();
+
+    let back = ParquetReader::new(std::fs::File::open(&out).unwrap())
+        .finish()
+        .unwrap();
+    assert_eq!(back.width(), 4); // val replaced, lbl appended
+    assert_eq!(back.get_column_names()[1].as_str(), "val"); // position kept
+
+    let val = back.column("val").unwrap().f64().unwrap();
+    assert_eq!(val.get(0), Some(77.0));
+    assert_eq!(val.get(1), Some(84.0));
 }
 
 #[test]

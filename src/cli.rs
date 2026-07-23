@@ -52,7 +52,7 @@ pub struct CommonArgs {
     /// Input file (parquet, csv, tsv, csv.gz, tsv.gz)
     pub input: PathBuf,
 
-    /// Output file (default: <input stem>.<module>.parquet beside the input)
+    /// Output file (default: <input stem>.<module>.<input format> beside the input)
     #[arg(short, long)]
     pub output: Option<PathBuf>,
 
@@ -67,6 +67,11 @@ pub struct CommonArgs {
     /// Output format (default: inferred from --output, else parquet)
     #[arg(long, value_enum, default_value_t = Format::Auto)]
     pub out_format: Format,
+
+    /// Overwrite input columns that clash with the output columns
+    /// (default: a clashing column is an error)
+    #[arg(long)]
+    pub overwrite: bool,
 
     /// Longitude column name
     #[arg(long, default_value = "longitude")]

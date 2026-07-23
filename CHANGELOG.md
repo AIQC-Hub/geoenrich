@@ -4,6 +4,34 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-23
+
+### Added
+
+- `scripts/download_data.sh`: downloads and unpacks the five reference
+  datasets into `data/`, one sub-directory per source, matching the README
+  example paths. Selected datasets download in parallel; existing archives
+  are kept (`--force` re-downloads) and the multi-GB GEBCO grid resumes an
+  interrupted download. The Marine Regions (IHO) download submits the site's
+  form, so it needs `--mr-name`, `--mr-email`, and `--mr-country`, and it
+  fails loudly when the form rejects the request instead of leaving a broken
+  archive. The GISCO LAU bundle's EPSG 4326 (lon/lat) shapefile is unpacked
+  from its nested zip, since geoenrich needs lon/lat coordinates.
+- New `--overwrite` flag on every command: when an output column already
+  exists in the input, it is replaced in place (keeping its position and
+  getting the output dtype) instead of the run failing. Without the flag a
+  clashing column is still an error, now caught before enrichment starts and
+  naming the column(s) and the flag.
+
+### Changed
+
+- The default output file (when `--output` is omitted) now keeps the input's
+  format and extension: `points.csv.gz` enriches to `points.<command>.csv.gz`
+  instead of `points.<command>.parquet`, with the whole `.csv.gz` suffix
+  replaced (no stray `.csv` in the stem). Inputs with an unrecognized
+  extension still default to Parquet, and an explicit `--output` or
+  `--out-format` behaves as before.
+
 ## [0.2.0] - 2026-07-23
 
 ### Added

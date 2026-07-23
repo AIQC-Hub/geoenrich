@@ -169,7 +169,7 @@ pub fn run(args: SeaArgs) -> Result<(), Box<dyn Error>> {
         .common
         .output
         .clone()
-        .unwrap_or_else(|| super::default_output(&args.common.input, "sea"));
+        .unwrap_or_else(|| super::default_output(&args.common.input, "sea", args.common.in_format));
 
     let proj = Laea::new(s.proj_lon0, s.proj_lat0);
     let enr = SeaEnricher::open(&data, &args.name_field, s.bbox, proj, args.column)?;

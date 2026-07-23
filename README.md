@@ -1,5 +1,7 @@
 # geoenrich
 
+[![Latest release](https://img.shields.io/github/v/release/AIQC-Hub/geoenrich?label=release)](https://github.com/AIQC-Hub/geoenrich/releases/latest)
+
 `geoenrich` is a Rust command-line tool that adds geospatial attributes to a
 table of points. Give it a file with `longitude` and `latitude` columns and it
 appends any of:

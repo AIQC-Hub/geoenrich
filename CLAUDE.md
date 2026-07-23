@@ -153,8 +153,9 @@ verifies the response is a zip, failing loudly when the form rejects it.
 ## Regions
 
 The default region is the whole globe. Other regions come from `--region`
-presets (`global`, `baltic`, `norway`, `arctic`, `europe`, `mediterranean`) or
-explicit `--min-lon/--max-lon/--min-lat/--max-lat` and `--proj-lon0/--proj-lat0`.
+presets (`global`, `baltic`, `norway`, `arctic`, `atlantic`, `europe`,
+`mediterranean`) or explicit `--min-lon/--max-lon/--min-lat/--max-lat` and
+`--proj-lon0/--proj-lat0`.
 The Baltic box (8, 31, 53, 66) matches the R examples and is the `baltic` preset.
 Add presets in `config::preset_bbox`. The `place` municipality lookup will also
 need a per-region country list (the R snippet's ISO3 set).

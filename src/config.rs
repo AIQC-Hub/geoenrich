@@ -68,6 +68,7 @@ pub fn preset_bbox(name: &str) -> Option<BBox> {
         "baltic" => Some(BALTIC),
         "norway" => Some(BBox { min_lon: -10.0, max_lon: 45.0, min_lat: 55.0, max_lat: 85.0 }),
         "arctic" => Some(BBox { min_lon: -180.0, max_lon: 180.0, min_lat: 60.0, max_lat: 90.0 }),
+        "atlantic" => Some(BBox { min_lon: -83.0, max_lon: 20.0, min_lat: -60.0, max_lat: 70.0 }),
         "europe" => Some(BBox { min_lon: -25.0, max_lon: 45.0, min_lat: 34.0, max_lat: 72.0 }),
         "mediterranean" => Some(BBox { min_lon: -6.0, max_lon: 37.0, min_lat: 30.0, max_lat: 46.0 }),
         "global" => Some(GLOBAL),
@@ -130,7 +131,7 @@ mod tests {
 
     #[test]
     fn named_presets_resolve() {
-        for name in ["baltic", "norway", "arctic", "europe", "mediterranean", "global"] {
+        for name in ["baltic", "norway", "arctic", "atlantic", "europe", "mediterranean", "global"] {
             assert!(preset_bbox(name).is_some(), "missing preset '{name}'");
         }
         // case-insensitive; an unknown name is None

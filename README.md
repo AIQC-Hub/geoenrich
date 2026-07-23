@@ -63,9 +63,10 @@ Every command shares these options:
 | `-c, --config <TOML>` | none | Config file (CLI flags override it) |
 
 The `coast`, `sea`, and `place` commands also take region options: a `--region`
-preset (`global`, `baltic`, `norway`, `arctic`, `europe`, `mediterranean`) or
-explicit `--min-lon/--max-lon/--min-lat/--max-lat`, plus `--proj-lon0/--proj-lat0`
-for the distance projection center. The default region is the whole globe.
+preset (`global`, `baltic`, `norway`, `arctic`, `atlantic`, `europe`,
+`mediterranean`) or explicit `--min-lon/--max-lon/--min-lat/--max-lat`, plus
+`--proj-lon0/--proj-lat0` for the distance projection center. The default region
+is the whole globe.
 
 The `nearest` command instead takes a second table (`--to`), the set of named
 locations to measure the distance to. Its coordinate columns default to

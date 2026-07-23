@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-07-24
+
+### Added
+
+- Crate `repository`, `homepage`, and `documentation` metadata, and an
+  `exclude` that keeps the docs book, CI config, and internal notes out of the
+  published tarball.
+- Continuous integration on GitHub Actions (build and `cargo test` on push and
+  pull request), and automated publishing to crates.io on a version tag via
+  Trusted Publishing (OIDC, no stored token).
+
 ## [0.7.0] - 2026-07-23
 
 ### Added

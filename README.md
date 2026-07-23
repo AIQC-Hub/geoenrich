@@ -14,11 +14,11 @@ and `tsv.gz`. Each command reduces the input to unique rounded locations,
 processes those in parallel, and joins the results back onto every row, so a file
 with millions of rows but few distinct positions is cheap to enrich.
 
-> **Status:** in progress. The `coast` (nearest GSHHG shoreline by projected
-> R-tree lookup), `depth` (GEBCO grid lookup), and `sea` (IHO point in polygon
-> with a nearest fallback) modules are implemented and tested. The `place`
-> lookup is still stubbed and emits empty values (each run prints a notice).
-> See `CLAUDE.md` for the algorithm and caveats per module.
+> **Status:** all four modules are implemented and tested: `coast` (nearest
+> GSHHG shoreline by projected R-tree lookup), `depth` (GEBCO grid lookup),
+> `sea` (IHO point in polygon with a nearest fallback), and `place` (nearest
+> Natural Earth country and GISCO LAU municipality). See `CLAUDE.md` for the
+> algorithm and caveats per module.
 
 ## Install
 

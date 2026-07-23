@@ -1,10 +1,10 @@
 //! The four enrichment modules. Each builds an [`crate::pipeline::Enricher`] from
 //! its data source and options, then hands off to `pipeline::run_module`.
 //!
-//! Implemented: `coast` (nearest GSHHG shoreline distance), `depth` (GEBCO grid
-//! lookup), and `sea` (IHO Sea Areas point in polygon). The `place` lookup is
-//! still a stub that emits empty values; its `run` prints a one-line notice so a
-//! stub run is never mistaken for real data.
+//! All four per-location lookups are implemented: `coast` (nearest GSHHG
+//! shoreline distance), `depth` (GEBCO grid lookup), `sea` (IHO Sea Areas point
+//! in polygon), and `place` (nearest Natural Earth country and GISCO LAU
+//! municipality).
 
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -28,13 +28,6 @@ pub(crate) fn default_output(input: &Path, tag: &str) -> PathBuf {
         Some(dir) if !dir.as_os_str().is_empty() => dir.join(name),
         _ => PathBuf::from(name),
     }
-}
-
-/// Printed once per stubbed module so scaffold output is clearly labeled.
-pub(crate) fn stub_notice(module: &str, emits: &str) {
-    eprintln!(
-        "[geoenrich] {module}: scaffold stub, emitting {emits} until the algorithm is implemented"
-    );
 }
 
 /// Read every polygon from a shapefile as (rings, attribute record) pairs,

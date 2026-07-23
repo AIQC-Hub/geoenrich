@@ -27,16 +27,23 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   even-odd point-in-polygon test with a nearest-boundary fallback for points
   that fall just inland (fjords). New `--name-field` flag selects the name
   property (default `NAME`).
+- `place` module implemented against Natural Earth countries and, optionally,
+  GISCO LAU municipalities: both lookups resolve a point by containment first
+  and nearest boundary otherwise, appending `country`, `country_code` (ISO
+  alpha-3 where available; the Natural Earth `-99` placeholder becomes null),
+  and `municipality`. Attribute fields are auto-detected from candidate lists,
+  so minor schema drift between dataset versions needs no flags.
 - Shared vector-geometry helpers in `geo::vector`: point-to-segment distance,
   tagged R-tree segments, even-odd point in polygon, and a `PolygonIndex`
   combining containment with a nearest-boundary fallback.
 
 ### Changed
 
-- `depth` now requires `--data <GEBCO NetCDF file>` and `coast` and `sea`
-  require `--data`; each errors clearly when its data source is omitted,
-  instead of printing the scaffold stub notice and emitting NaN or empty
-  values.
+- `depth` now requires `--data <GEBCO NetCDF file>`, `coast` and `sea` require
+  `--data`, and `place` requires `--countries`; each errors clearly when its
+  data source is omitted. With every module implemented, the scaffold stub
+  notice is gone. `--municipalities` stays optional: without it the
+  `municipality` column is empty and a note says so.
 
 ## [0.1.0] - 2026-07-22
 

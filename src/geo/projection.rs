@@ -69,6 +69,31 @@ impl Laea {
     }
 }
 
+/// Unit-sphere `(x, y, z)` for a lon/lat point in degrees.
+///
+/// Nearest neighbor by Euclidean chord distance between these vectors is the
+/// nearest by great-circle distance (the chord grows monotonically with the
+/// central angle), so a 3D R-tree over unit-sphere points answers "nearest of a
+/// set" correctly anywhere on the globe, with no projection center and none of
+/// the distortion a single planar projection has away from its center. Pair it
+/// with [`chord2_to_m`] to turn the squared chord the R-tree reports back into
+/// meters.
+pub fn unit_sphere(lon_deg: f64, lat_deg: f64) -> [f64; 3] {
+    let (lam, phi) = (lon_deg.to_radians(), lat_deg.to_radians());
+    let (cos_phi, sin_phi) = (phi.cos(), phi.sin());
+    [cos_phi * lam.cos(), cos_phi * lam.sin(), sin_phi]
+}
+
+/// Great-circle distance in meters from a squared chord length between two
+/// [`unit_sphere`] vectors. The chord `c` and central angle `theta` relate by
+/// `c = 2 sin(theta/2)`, so `theta = 2 asin(c/2)` and the distance is
+/// `R * theta`. The half-chord is clamped to `[0, 1]` against rounding at the
+/// antipode.
+pub fn chord2_to_m(chord2: f64) -> f64 {
+    let half = (chord2.max(0.0).sqrt() / 2.0).min(1.0);
+    2.0 * MEAN_RADIUS_M * half.asin()
+}
+
 /// Great-circle distance between two lon/lat points (degrees), in meters.
 pub fn haversine_m(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
     let (p1, p2) = (lat1.to_radians(), lat2.to_radians());
@@ -119,5 +144,25 @@ mod tests {
         // Helsinki to Stockholm is ~395 km.
         let d = haversine_m(24.9384, 60.1699, 18.0686, 59.3293);
         assert!((390_000.0..402_000.0).contains(&d), "d={d}");
+    }
+
+    #[test]
+    fn chord_distance_matches_haversine_globally() {
+        // The unit-sphere chord distance must equal the great-circle distance
+        // even over long, cross-globe separations where a planar projection
+        // would be far off. Helsinki to Stockholm (short) and Oslo to Sydney
+        // (a third of the way around the Earth).
+        for &(alon, alat, blon, blat) in &[
+            (24.9384, 60.1699, 18.0686, 59.3293),
+            (10.7522, 59.9139, 151.2093, -33.8688),
+        ] {
+            let a = unit_sphere(alon, alat);
+            let b = unit_sphere(blon, blat);
+            let chord2 = (0..3).map(|i| (a[i] - b[i]).powi(2)).sum();
+            let d = chord2_to_m(chord2);
+            let gc = haversine_m(alon, alat, blon, blat);
+            let rel = (d - gc).abs() / gc;
+            assert!(rel < 1e-9, "chord={d} gc={gc} rel={rel}");
+        }
     }
 }

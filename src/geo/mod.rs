@@ -7,4 +7,4 @@
 pub mod projection;
 pub mod vector;
 
-pub use projection::{haversine_m, Laea};
+pub use projection::{chord2_to_m, haversine_m, unit_sphere, Laea};

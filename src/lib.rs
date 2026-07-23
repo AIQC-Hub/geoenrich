@@ -1,11 +1,12 @@
 //! geoenrich: enrich longitude/latitude points with geospatial attributes.
 //!
-//! Four modules add columns to a table of points, keyed only on `longitude` and
+//! Five modules add columns to a table of points, keyed only on `longitude` and
 //! `latitude`:
-//!   - `coast`  distance to the nearest shoreline (GSHHG)
-//!   - `depth`  bathymetric depth (GEBCO grid)
-//!   - `sea`    sea / ocean name (IHO Sea Areas)
-//!   - `place`  nearest country and municipality (Natural Earth + GISCO)
+//!   - `coast`    distance to the nearest shoreline (GSHHG)
+//!   - `depth`    bathymetric depth (GEBCO grid)
+//!   - `sea`      sea / ocean name (IHO Sea Areas)
+//!   - `place`    nearest country and municipality (Natural Earth + GISCO)
+//!   - `nearest`  nearest location in a second table, with its distance
 //!
 //! Every module shares one pipeline (`pipeline::run_module`): read the input,
 //! reduce it to unique rounded locations, enrich those in parallel, then join the
@@ -29,5 +30,6 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         Commands::Depth(args) => modules::depth::run(args),
         Commands::Sea(args) => modules::sea::run(args),
         Commands::Place(args) => modules::place::run(args),
+        Commands::Nearest(args) => modules::nearest::run(args),
     }
 }

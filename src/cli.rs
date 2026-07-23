@@ -22,6 +22,8 @@ pub enum Commands {
     Sea(SeaArgs),
     /// Nearest country and municipality (Natural Earth + GISCO)
     Place(PlaceArgs),
+    /// Nearest location in a second table, with its distance
+    Nearest(NearestArgs),
 }
 
 /// Input / output tabular format. `Auto` infers from the file extension and
@@ -194,4 +196,43 @@ pub struct PlaceArgs {
     /// GISCO LAU municipalities (shapefile) for the nearest-municipality lookup
     #[arg(long)]
     pub municipalities: Option<PathBuf>,
+}
+
+#[derive(Args, Debug)]
+pub struct NearestArgs {
+    #[command(flatten)]
+    pub common: CommonArgs,
+
+    /// Reference table: the second set of locations to measure the distance to
+    /// (any tabular format, same as the input)
+    #[arg(long)]
+    pub to: PathBuf,
+
+    /// Format of the reference table (default: inferred from the extension)
+    #[arg(long, value_enum, default_value_t = Format::Auto)]
+    pub to_format: Format,
+
+    /// Longitude column in the reference table
+    #[arg(long, default_value = "longitude")]
+    pub to_lon_col: String,
+
+    /// Latitude column in the reference table
+    #[arg(long, default_value = "latitude")]
+    pub to_lat_col: String,
+
+    /// Column in the reference table holding each location's name
+    #[arg(long, default_value = "name")]
+    pub name_field: String,
+
+    /// Distance unit for the output distance column
+    #[arg(long, value_enum, default_value_t = DistUnit::Km)]
+    pub unit: DistUnit,
+
+    /// Output column for the nearest location's name
+    #[arg(long, default_value = "nearest_name")]
+    pub name_column: String,
+
+    /// Output column for the distance to the nearest location
+    #[arg(long, default_value = "nearest_dist")]
+    pub dist_column: String,
 }

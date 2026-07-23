@@ -5,12 +5,14 @@ Guidance for Claude Code when working in this repository.
 ## Project Overview
 
 `geoenrich` is a Rust CLI that enriches a table of `longitude`/`latitude` points
-with four geospatial attributes, one per top-level command:
+with geospatial attributes, one per top-level command:
 
 - `coast`: distance to the nearest shoreline (GSHHG shorelines).
 - `depth`: bathymetric depth at the point (GEBCO gridded bathymetry).
 - `sea`: sea / ocean name (IHO Sea Areas, point in polygon).
 - `place`: nearest country and municipality (Natural Earth + Eurostat GISCO).
+- `nearest`: nearest location in a caller-supplied second table, and the
+  distance to it (any two sets, no bundled dataset).
 
 It is a sibling to `ctddump` and follows the same house style, but is a separate
 package on purpose: it must stay light and reusable across several downstream
@@ -31,7 +33,7 @@ semicolon, or a reworded sentence instead. (Carried over from `ctddump`.)
 ## Implementation status
 
 The scaffold (CLI, config resolution, multi-format I/O, and the shared pipeline
-`pipeline::run_module`) and all four modules are implemented and tested:
+`pipeline::run_module`) and all five modules are implemented and tested:
 
 - `depth` (`src/modules/depth.rs`): GEBCO NetCDF grid lookup keyed on `netcdf`
   (linking system HDF5). Nearest-cell by arithmetic, serialized reads under a
@@ -49,6 +51,14 @@ The scaffold (CLI, config resolution, multi-format I/O, and the shared pipeline
   LAU municipalities, both resolved containment-first with a nearest-boundary
   fallback; DBF attribute fields auto-detected from candidate lists (the
   Natural Earth `-99` code placeholder reads as missing).
+- `nearest` (`src/modules/nearest.rs`): nearest point of a second table the
+  caller passes with `--to` (not a bundled dataset). Reference points are mapped
+  to unit-sphere `(x, y, z)` and indexed in a 3D `rstar` R-tree; the nearest by
+  Euclidean chord is the nearest by great-circle distance, so the result is
+  exact anywhere on the globe and the command takes no region or projection
+  center (unlike `coast`, which uses the region LAEA). Appends `nearest_name`
+  and `nearest_dist` (km or m). `geo::{unit_sphere, chord2_to_m}` hold the
+  sphere math; `tests/nearest.rs` checks it against `haversine_m` cross-globe.
 
 The shared vector geometry (point-to-segment distance, tagged R-tree segments,
 even-odd point in polygon, and the containment-plus-nearest `PolygonIndex` used
@@ -107,11 +117,12 @@ nearest-coast query at regional scale. `haversine_m` is the great-circle distanc
 used for reference and for refining index candidates. Sub-meter accuracy, if ever
 needed, means an ellipsoidal LAEA in place of the spherical one.
 
-**Modules** (`src/modules/`): `coast`, `depth`, `sea`, `place`. Each builds its
-`Enricher` from a data-source path and options and calls `run_module`. Shared
-helpers: `default_output` (the `<stem>.<tag>.<ext>` fallback, where `<ext>`
-matches the input format, so the output format defaults to the input's) and
-`shp_polygons` (whole-polygon shapefile read used by `sea` and `place`).
+**Modules** (`src/modules/`): `coast`, `depth`, `sea`, `place`, `nearest`. Each
+builds its `Enricher` from a data source (a bundled-dataset path, or the `--to`
+table for `nearest`) and options and calls `run_module`. Shared helpers:
+`default_output` (the `<stem>.<tag>.<ext>` fallback, where `<ext>` matches the
+input format, so the output format defaults to the input's) and `shp_polygons`
+(whole-polygon shapefile read used by `sea` and `place`).
 
 ## Data sources (not bundled)
 

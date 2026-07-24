@@ -27,13 +27,31 @@ with millions of rows but few distinct positions is cheap to enrich.
 
 ## Install
 
+### Prebuilt binary
+
+Each release attaches prebuilt archives for Linux and macOS (x86_64 and arm64)
+to its [GitHub release](https://github.com/AIQC-Hub/geoenrich/releases/latest).
+They bundle HDF5 and netCDF, so they need no system libraries: download, unpack,
+and run. The helper scripts ship inside the archive.
+
+### From crates.io
+
+```bash
+cargo install geoenrich
+```
+
+This builds the `depth` command against the system HDF5 / NetCDF libraries, so
+install their dev headers first (see below).
+
+### From source
+
 ```bash
 cargo build --release
 # binary at target/release/geoenrich
 ```
 
 The `depth` command reads GEBCO NetCDF and links the HDF5 / NetCDF C libraries,
-so you need the dev headers (as with ctddump):
+so a source or `cargo install` build needs the dev headers (as with ctddump):
 
 ```bash
 # Ubuntu / Debian
@@ -41,6 +59,9 @@ sudo apt-get install libhdf5-dev libnetcdf-dev
 # macOS
 brew install hdf5
 ```
+
+To build a self-contained binary that vendors those libraries instead (as the
+release archives do), add `--features static-netcdf` (this needs `cmake`).
 
 ## Usage
 

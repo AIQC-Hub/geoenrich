@@ -184,3 +184,18 @@ before implementing it.
 Match ctddump: permanent `main` (stable) and `develop` (integration) branches;
 day-to-day work on `develop`. Commit and push only when the user asks. Commit
 messages end with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
+
+## CI and releases
+
+Two GitHub workflows, both modeled on ctddump. `ci.yml` builds and runs
+`cargo test` on push and PR to `main` (installs libhdf5-dev / libnetcdf-dev for
+`depth`, strips debuginfo so the statically linked Polars test binaries fit the
+runner disk). `publish.yml` fires on a `v*` tag: it re-runs the tests, then in
+parallel (a) publishes to crates.io via Trusted Publishing (OIDC, no stored
+token; the tag must match `Cargo.toml`), and (b) builds prebuilt binaries for
+Linux and macOS (x86_64 and arm64) with `--features static-netcdf`
+(`netcdf/static`, vendoring HDF5 / netCDF via cmake) and creates the GitHub
+release, attaching the archives and `SHA256SUMS`, with notes extracted from the
+matching `CHANGELOG.md` section. Because the workflow now creates the release,
+do not also create it by hand for a tagged release. `Cargo.lock` is committed
+(the workflow uses `--locked`), so bump it alongside the version.

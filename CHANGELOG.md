@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Prebuilt binary archives attached to each GitHub release, for Linux and macOS
+  on x86_64 and arm64. They bundle HDF5 and netCDF (a new `static-netcdf` Cargo
+  feature vendors the C libraries), so they run with no system libraries, and
+  the helper scripts ship inside each archive. The release workflow builds them
+  and creates the GitHub release with notes from this changelog.
+
 ## [0.7.1] - 2026-07-24
 
 ### Added
